@@ -8,8 +8,11 @@
 // The npm check runs every time.
 //
 // The checks for GitHub run once the repository has a remote called origin. They read
-// your public repository on GitHub without logging in (its main branch and issues), so
-// they need an internet connection. Everything else works offline.
+// your public repository on GitHub without logging in (its main branch, issues and pull
+// requests), so they need an internet connection. Everything else works offline.
+//
+// From course 4 on, every change goes through a pull request. The checks for Prettier
+// and ESLint run once .prettierrc and eslint.config.js exist.
 
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, realpathSync } from "node:fs";
@@ -61,7 +64,10 @@ function report() {
 function checkGitInstalled() {
   const version = git("--version");
   if (version.missing || !version.ok) {
-    fail("Git isn't installed, or your terminal can't find it.", "install Git, then open a new terminal.");
+    fail(
+      "Git isn't installed, or your terminal can't find it.",
+      "install Git, then open a new terminal.",
+    );
     return false;
   }
   pass(`Git is installed (${version.out}).`);
@@ -123,7 +129,10 @@ function checkIgnored() {
 function checkCommits() {
   const count = git("rev-list", "--count", "HEAD");
   if (!count.ok) {
-    fail("There are no commits yet.", "stage the project's files with git add, then make the first commit.");
+    fail(
+      "There are no commits yet.",
+      "stage the project's files with git add, then make the first commit.",
+    );
     return;
   }
   pass(`The history has ${count.out} commit(s).`);
@@ -140,7 +149,10 @@ function checkCommits() {
         "keep the subject short (about 50 characters) and put details in the body.",
       );
     } else if (vague.test(subject.trim())) {
-      warn(`Commit ${hash} says only "${subject}".`, "say what the commit does, like \"Add Thanksgiving hours\".");
+      warn(
+        `Commit ${hash} says only "${subject}".`,
+        'say what the commit does, like "Add Thanksgiving hours".',
+      );
     }
   }
 }
@@ -173,7 +185,10 @@ function checkBranch() {
   if (branch) {
     pass(`You're on the ${branch} branch.`);
   } else {
-    warn("You're not on a branch: HEAD points straight at a commit.", "git switch main to get back on a branch.");
+    warn(
+      "You're not on a branch: HEAD points straight at a commit.",
+      "git switch main to get back on a branch.",
+    );
   }
 }
 
@@ -184,7 +199,10 @@ function readPackageJson() {
   try {
     return JSON.parse(readFileSync(join(projectDir, "package.json"), "utf8"));
   } catch (error) {
-    fail(`package.json isn't valid JSON (${error.message}).`, "fix the file, so npm and this script can read it.");
+    fail(
+      `package.json isn't valid JSON (${error.message}).`,
+      "fix the file, so npm and this script can read it.",
+    );
     return null;
   }
 }
@@ -194,14 +212,19 @@ function checkPackageJson(pkg) {
     pass('package.json has "type": "module".');
   } else {
     fail(
-      pkg.type === undefined ? 'package.json has no "type" field.' : `package.json has "type": "${pkg.type}".`,
+      pkg.type === undefined
+        ? 'package.json has no "type" field.'
+        : `package.json has "type": "${pkg.type}".`,
       'set "type": "module" in package.json, because the store\'s code and this script are ES modules.',
     );
   }
   if (pkg.scripts?.check) {
     pass('package.json has a "check" script, so npm run check runs this report.');
   } else {
-    fail('package.json has no "check" script.', 'add "check": "node scripts/check.js" to its "scripts".');
+    fail(
+      'package.json has no "check" script.',
+      'add "check": "node scripts/check.js" to its "scripts".',
+    );
   }
 }
 
@@ -300,7 +323,10 @@ function checkEnv() {
       "replace the key with a placeholder, such as your-publishable-key. If it's a secret key, rotate it first.",
     );
   } else if (!isTracked(".env.example")) {
-    fail(".env.example isn't committed yet.", "git add .env.example, read git diff --staged, then commit it.");
+    fail(
+      ".env.example isn't committed yet.",
+      "git add .env.example, read git diff --staged, then commit it.",
+    );
   } else {
     pass(".env.example is committed, with a placeholder instead of the key.");
   }
@@ -325,7 +351,10 @@ function checkViteMerged() {
   if (git("merge-base", "--is-ancestor", "vite", "main").ok) {
     pass("Everything on the vite branch is in main.");
   } else {
-    warn("The vite branch isn't merged into main yet.", "finish the move on vite, then git switch main and git merge vite.");
+    warn(
+      "The vite branch isn't merged into main yet.",
+      "finish the move on vite, then git switch main and git merge vite.",
+    );
   }
 }
 
@@ -344,7 +373,10 @@ function checkNpm() {
   if (major === null) {
     const run = spawnSync("npm", ["-v"], { encoding: "utf8", shell: process.platform === "win32" });
     if (run.status !== 0 || !run.stdout) {
-      warn("npm doesn't run in this terminal.", "install Node.js, which comes with npm, then open a new terminal.");
+      warn(
+        "npm doesn't run in this terminal.",
+        "install Node.js, which comes with npm, then open a new terminal.",
+      );
       return;
     }
     major = Number(run.stdout.trim().split(".")[0]);
@@ -387,14 +419,18 @@ function checkClean() {
   if (status.out) {
     const lines = status.out.split("\n");
     const files = lines.map((line) => line.slice(3));
-    const keepOut = files.filter((file) => file === ".env" || file === "dist/" || file.startsWith("dist/"));
+    const keepOut = files.filter(
+      (file) => file === ".env" || file === "dist/" || file.startsWith("dist/"),
+    );
     // git restore only works on files Git already tracks. On an untracked file it fails
     // with a pathspec error, so new files get their own advice.
     const untracked = lines.filter((line) => line.startsWith("??")).map((line) => line.slice(3));
     const trackedLines = lines.filter((line) => !line.startsWith("??"));
     const tracked = trackedLines.map((line) => line.slice(3));
     // A plain git restore only resets the working tree, so staged changes need --staged too.
-    const restore = trackedLines.some((line) => line[0] !== " ") ? "git restore --staged --worktree" : "git restore";
+    const restore = trackedLines.some((line) => line[0] !== " ")
+      ? "git restore --staged --worktree"
+      : "git restore";
     const one = untracked.length === 1;
     const advice = [];
     if (tracked.length) {
@@ -422,17 +458,125 @@ function checkClean() {
   }
 }
 
+// --- Prettier, ESLint and branches (course 4 on) ---------------------------------------
+
+// npm and npx, which are npm.cmd and npx.cmd on Windows, so they need a shell there.
+function npm(command, args) {
+  return spawnSync(command, args, {
+    cwd: projectDir,
+    encoding: "utf8",
+    shell: process.platform === "win32",
+  });
+}
+
+function checkPrettier(pkg) {
+  if (!existsSync(join(projectDir, ".prettierrc"))) {
+    return;
+  }
+  const version = pkg?.devDependencies?.prettier;
+  if (!version) {
+    fail(
+      "There's a .prettierrc, but prettier isn't in package.json's devDependencies.",
+      "npm install -D --save-exact prettier",
+    );
+    return;
+  }
+  if (!/^\d/.test(version)) {
+    warn(
+      `prettier is listed as "${version}", a range, so two computers can format differently.`,
+      "npm install -D --save-exact prettier, so package.json lists one exact version.",
+    );
+  } else {
+    pass(`prettier ${version} is pinned to one exact version.`);
+  }
+  const run = npm("npx", ["--no-install", "prettier", "--check", "."]);
+  if (run.status === 0) {
+    pass("prettier --check . finds every file formatted.");
+  } else {
+    const files = (run.stdout + run.stderr)
+      .split("\n")
+      .filter((line) => line.startsWith("[warn] ") && !line.includes("Code style issues"))
+      .map((line) => line.slice(7));
+    fail(
+      files.length
+        ? `prettier --check . finds files that aren't formatted: ${files.join(", ")}.`
+        : "prettier --check . didn't pass.",
+      "npm run format, then look at git diff and commit the result.",
+    );
+  }
+}
+
+function checkLint(pkg) {
+  if (!existsSync(join(projectDir, "eslint.config.js"))) {
+    return;
+  }
+  if (!pkg?.scripts?.lint) {
+    fail(
+      'There\'s an eslint.config.js, but package.json has no "lint" script.',
+      'add "lint": "eslint ." to its "scripts".',
+    );
+    return;
+  }
+  const run = npm("npm", ["run", "lint", "--silent"]);
+  if (run.status === 0) {
+    pass("npm run lint finds no problems.");
+  } else {
+    const count = /(\d+) problems?/.exec(run.stdout + run.stderr);
+    fail(
+      count ? `npm run lint finds ${count[1]} problem(s).` : "npm run lint didn't pass.",
+      "run npm run lint, and fix each problem at the file, line and rule it names.",
+    );
+  }
+}
+
+// After a squash merge, GitHub deletes the pull request's branch, and the local branch
+// stays behind. Its upstream is compared with GitHub's branches, so no fetch is needed.
+async function checkGoneBranches(repository) {
+  const upstreams = git("for-each-ref", "--format=%(refname:short) %(upstream:short)", "refs/heads")
+    .out.split("\n")
+    .map((line) => line.split(" "))
+    .filter(([branch, upstream]) => branch !== "main" && upstream?.startsWith("origin/"));
+  if (!upstreams.length) {
+    return;
+  }
+  const branches = await gitHub(`/repos/${repository}/branches?per_page=100`);
+  if (!Array.isArray(branches.body)) {
+    return;
+  }
+  const onGitHub = new Set(branches.body.map((branch) => branch.name));
+  const gone = upstreams
+    .filter(([, upstream]) => !onGitHub.has(upstream.slice("origin/".length)))
+    .map(([branch]) => branch);
+  if (gone.length) {
+    warn(
+      `${gone.join(", ")} ${gone.length === 1 ? "is" : "are"} deleted on GitHub, but still here.`,
+      `if ${gone.length === 1 ? "its pull request is" : "their pull requests are"} merged, git branch -D ${gone.join(" ")}. A squash merge makes a new commit, so git branch -d doesn't see the branch as merged.`,
+    );
+  }
+}
+
 // --- GitHub (course 3 on) -----------------------------------------------------------
 
-// The week's work arrives as issues with these titles. They're found by title, because
-// their numbers depend on what else the repository has.
-const issueTitles = [
-  "Add next week's deals",
-  "Add the deli counter's hours to the departments page",
-  "Close at 1 p.m. on Thanksgiving",
-  "Open at 8 a.m. on Thanksgiving",
-  "Mark bananas down to 49¢ a pound",
+// Each course's work arrives as issues with these titles. They're found by title, because
+// their numbers depend on what else the repository has. The last group is this course's;
+// an earlier course's issues are checked only if the repository has them (a repository
+// made from this course's ZIP doesn't).
+const issueGroups = [
+  [
+    "Add next week's deals",
+    "Add the deli counter's hours to the departments page",
+    "Close at 1 p.m. on Thanksgiving",
+    "Open at 8 a.m. on Thanksgiving",
+    "Mark bananas down to 49¢ a pound",
+  ],
+  [
+    "Add ESLint and Prettier",
+    "Show a closing-soon notice on the home page",
+    "Add a Christmas turkey pre-order page",
+  ],
 ];
+// The pull request whose review the course grades: it must have line comments.
+const reviewedPullRequest = "Add a Christmas turkey pre-order page";
 
 // owner/name from a GitHub remote URL (https://github.com/owner/name.git or
 // git@github.com:owner/name.git), or null for another host.
@@ -460,7 +604,10 @@ function checkRemote() {
   }
   const repository = gitHubRepository(url.out);
   if (!repository) {
-    warn(`origin points at ${url.out}, which isn't on GitHub.`, "set origin to your GitHub repository's URL with git remote set-url origin <url>.");
+    warn(
+      `origin points at ${url.out}, which isn't on GitHub.`,
+      "set origin to your GitHub repository's URL with git remote set-url origin <url>.",
+    );
     return null;
   }
   pass(`origin is your GitHub repository, ${repository}.`);
@@ -470,7 +617,10 @@ function checkRemote() {
 function checkUpstream() {
   const upstream = git("rev-parse", "--abbrev-ref", "main@{upstream}");
   if (!upstream.ok) {
-    fail("main has no upstream branch, so git push and git pull don't know where to go.", "git push -u origin main, once.");
+    fail(
+      "main has no upstream branch, so git push and git pull don't know where to go.",
+      "git push -u origin main, once.",
+    );
     return false;
   }
   pass(`main pushes to and pulls from ${upstream.out}.`);
@@ -490,9 +640,15 @@ function checkUpstream() {
       "git pull to merge GitHub's commits into yours, then git push.",
     );
   } else if (ahead) {
-    warn(`main has ${ahead} commit(s) that aren't on GitHub yet.`, "git push.");
+    warn(
+      `main has ${ahead} commit(s) that aren't on GitHub yet, but changes go through pull requests now.`,
+      "git switch -c <branch-name> to keep them on a new branch, then git branch -f main origin/main to move main back. Push the branch and open a pull request.",
+    );
   } else if (behind) {
-    warn(`As of your last fetch, GitHub has ${behind} commit(s) that main doesn't have yet.`, "git pull.");
+    warn(
+      `As of your last fetch, GitHub has ${behind} commit(s) that main doesn't have yet.`,
+      "git pull.",
+    );
   }
   return true;
 }
@@ -517,7 +673,9 @@ function checkThanksgiving() {
   if (!existsSync(file)) {
     return;
   }
-  const line = readFileSync(file, "utf8").split("\n").find((text) => text.includes('"Thanksgiving"'));
+  const line = readFileSync(file, "utf8")
+    .split("\n")
+    .find((text) => text.includes('"Thanksgiving"'));
   if (!line) {
     return;
   }
@@ -539,7 +697,9 @@ function checkEggPrice() {
   if (!existsSync(file)) {
     return;
   }
-  const eggs = readFileSync(file, "utf8").split("\n").find((text) => text.includes('"Large brown eggs"'));
+  const eggs = readFileSync(file, "utf8")
+    .split("\n")
+    .find((text) => text.includes('"Large brown eggs"'));
   const sale = eggs && /sale:\s*(\d+)/.exec(eggs);
   if (sale && Number(sale[1]) < 100) {
     fail(
@@ -552,7 +712,10 @@ function checkEggPrice() {
 async function checkGitHub(repository) {
   const repo = await gitHub(`/repos/${repository}`);
   if (repo.status === 0) {
-    warn("GitHub didn't answer, so the GitHub checks were skipped.", "check your internet connection, then run the check again.");
+    warn(
+      "GitHub didn't answer, so the GitHub checks were skipped.",
+      "check your internet connection, then run the check again.",
+    );
     return;
   }
   if (repo.status === 404) {
@@ -563,7 +726,10 @@ async function checkGitHub(repository) {
     return;
   }
   if (!repo.body) {
-    warn(`GitHub answered with status ${repo.status}, so the GitHub checks were skipped.`, "wait a few minutes, then run the check again.");
+    warn(
+      `GitHub answered with status ${repo.status}, so the GitHub checks were skipped.`,
+      "wait a few minutes, then run the check again.",
+    );
     return;
   }
   pass(`GitHub has your public repository ${repository}.`);
@@ -581,7 +747,10 @@ async function checkGitHub(repository) {
         : "git pull to get GitHub's commits, then git push.",
     );
   } else {
-    warn(`GitHub didn't say where its main is (status ${branch.status}).`, "wait a few minutes, then run the check again.");
+    warn(
+      `GitHub didn't say where its main is (status ${branch.status}).`,
+      "wait a few minutes, then run the check again.",
+    );
   }
 
   const issues = await gitHub(`/repos/${repository}/issues?state=all&per_page=100`);
@@ -593,25 +762,62 @@ async function checkGitHub(repository) {
     return;
   }
   const byTitle = new Map(
-    issues.body.filter((issue) => !issue.pull_request).map((issue) => [issue.title.trim().toLowerCase(), issue]),
+    issues.body
+      .filter((issue) => !issue.pull_request)
+      .map((issue) => [issue.title.trim().toLowerCase(), issue]),
   );
-  const found = issueTitles.map((title) => [title, byTitle.get(title.toLowerCase())]);
-  if (found.every(([, issue]) => !issue)) {
-    warn("None of this week's issues are on GitHub yet.", "create them from the lesson, with their titles exactly as given.");
-    return;
-  }
-  for (const [title, issue] of found) {
-    if (!issue) {
+  issueGroups.forEach((titles, index) => {
+    const current = index === issueGroups.length - 1;
+    const found = titles.map((title) => [title, byTitle.get(title.toLowerCase())]);
+    if (found.every(([, issue]) => !issue)) {
+      if (current) {
+        warn(
+          "None of this week's issues are on GitHub yet.",
+          "create them from the lesson, with their titles exactly as given.",
+        );
+      }
+      return;
+    }
+    for (const [title, issue] of found) {
+      if (!issue) {
+        warn(
+          `There's no issue "${title}" yet.`,
+          "create it from the lesson, with the title exactly as given. If you just did, wait a minute: GitHub's answer can be a minute old.",
+        );
+      } else if (issue.state === "closed") {
+        pass(`Issue #${issue.number} "${title}" is closed.`);
+      } else {
+        warn(
+          `Issue #${issue.number} "${title}" is still open.`,
+          `once its work is on main, close it: Closes #${issue.number} in a pull request's description, or close it on GitHub. If you just did, wait a minute: GitHub's answer can be a minute old.`,
+        );
+      }
+    }
+  });
+
+  const pulls = await gitHub(`/repos/${repository}/pulls?state=all&per_page=100`);
+  const reviewed = Array.isArray(pulls.body)
+    ? pulls.body.find(
+        (pull) => pull.title.trim().toLowerCase() === reviewedPullRequest.toLowerCase(),
+      )
+    : null;
+  if (reviewed) {
+    const comments = await gitHub(
+      `/repos/${repository}/pulls/${reviewed.number}/comments?per_page=100`,
+    );
+    if (!Array.isArray(comments.body)) {
       warn(
-        `There's no issue "${title}" yet.`,
-        "create it from the lesson, with the title exactly as given. If you just did, wait a minute: GitHub's answer can be a minute old.",
+        `GitHub didn't list pull request #${reviewed.number}'s comments (status ${comments.status}).`,
+        "wait a few minutes, then run the check again.",
       );
-    } else if (issue.state === "closed") {
-      pass(`Issue #${issue.number} "${title}" is closed.`);
+    } else if (comments.body.length) {
+      pass(
+        `Pull request #${reviewed.number} "${reviewedPullRequest}" has ${comments.body.length} line comment(s) from its review.`,
+      );
     } else {
       warn(
-        `Issue #${issue.number} "${title}" is still open.`,
-        `once its work is on main, close it: Closes #${issue.number} in a commit message, or close it on GitHub. If you just did, wait a minute: GitHub's answer can be a minute old.`,
+        `Pull request #${reviewed.number} "${reviewedPullRequest}" has no line comments yet.`,
+        "review it in the Files changed tab: click the + next to a line, write what's wrong and why, and add the comment.",
       );
     }
   }
@@ -631,8 +837,13 @@ if (checkGitInstalled() && checkRepository()) {
     checkThanksgiving();
     checkEggPrice();
   }
+  const pkg = readPackageJson();
+  checkPrettier(pkg);
+  checkLint(pkg);
+
   if (repository) {
     await checkGitHub(repository);
+    await checkGoneBranches(repository);
   }
   checkClean();
 }

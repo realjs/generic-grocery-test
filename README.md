@@ -54,5 +54,6 @@ Weekly deals run from Wednesday to Tuesday, like the printed weekly ad.
 
 ## To do
 
-The work now arrives as issues on the project's GitHub repository. A commit that
-finishes one closes it, with `Closes #` and the issue's number in its message.
+The work arrives as issues on the project's GitHub repository. Every change goes
+through a pull request into `main`, and the pull request that finishes an issue closes
+it, with `Closes #` and the issue's number in its description.
