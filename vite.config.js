@@ -4,7 +4,7 @@ import { defineConfig } from "vite";
 export default defineConfig({
   build: {
     rolldownOptions: {
-      input: ["index.html", "deals.html", "departments.html", "pickup.html"],
+      input: ["index.html", "deals.html", "departments.html", "pickup.html", "turkey.html"],
     },
   },
 });
